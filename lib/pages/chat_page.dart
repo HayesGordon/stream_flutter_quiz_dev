@@ -5,6 +5,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:provider/provider.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 import 'package:stream_quiz_app/controllers/auth_controller.dart';
+import 'package:stream_quiz_app/controllers/game.controller.dart';
 import 'package:stream_quiz_app/models/quiz_result.dart';
 import 'package:stream_quiz_app/repositories/quiz_repository.dart';
 import 'package:stream_quiz_app/widgets/widgets.dart';
@@ -23,6 +24,8 @@ class _ChatPageState extends State<ChatPage> {
   final StreamMessageInputController _messageInputController =
       StreamMessageInputController();
 
+  final GameController gameController = GameController();
+
   @override
   void dispose() {
     _messageInputController.dispose();
@@ -31,67 +34,70 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: const StreamChannelHeader(),
-      body: Column(
-        children: <Widget>[
-          Expanded(
-            child: StreamMessageListView(
-              messageBuilder: (_, messageDetails, ___, defaultMessageWidget) {
-                bool hasQuiz = false;
-                if (messageDetails.message.attachments.isNotEmpty &&
-                    messageDetails.message.attachments[0].type == 'quiz') {
-                  hasQuiz = true;
-                }
-
-                bool isOwner = messageDetails.message.user ==
-                    StreamChat.of(context).currentUser;
-
-                StreamMessageThemeData? theme;
-                if (hasQuiz) {
-                  if (isOwner) {
-                    theme = StreamChatTheme.of(context).ownMessageTheme;
-                  } else {
-                    theme = StreamChatTheme.of(context)
-                        .otherMessageTheme
-                        .copyWith(messageBackgroundColor: Colors.red);
+    return Provider.value(
+      value: gameController,
+      child: Scaffold(
+        appBar: const StreamChannelHeader(),
+        body: Column(
+          children: <Widget>[
+            Expanded(
+              child: StreamMessageListView(
+                messageBuilder: (_, messageDetails, ___, defaultMessageWidget) {
+                  bool hasQuiz = false;
+                  if (messageDetails.message.attachments.isNotEmpty &&
+                      messageDetails.message.attachments[0].type == 'quiz') {
+                    hasQuiz = true;
                   }
-                }
 
-                return defaultMessageWidget.copyWith(
-                  showReactions: false,
-                  // messageTheme:
-                  //     theme?.copyWith(messageBackgroundColor: Colors.red),
-                  customAttachmentBuilders: {
-                    'quiz': (_, message, attachments) => MessageBackground(
-                          child: QuizStartAttachment(
-                            message: message,
-                            attachment: attachments[0],
+                  bool isOwner = messageDetails.message.user ==
+                      StreamChat.of(context).currentUser;
+
+                  StreamMessageThemeData? theme;
+                  if (hasQuiz) {
+                    if (isOwner) {
+                      theme = StreamChatTheme.of(context).ownMessageTheme;
+                    } else {
+                      theme = StreamChatTheme.of(context)
+                          .otherMessageTheme
+                          .copyWith(messageBackgroundColor: Colors.red);
+                    }
+                  }
+
+                  return defaultMessageWidget.copyWith(
+                    showReactions: false,
+                    // messageTheme:
+                    //     theme?.copyWith(messageBackgroundColor: Colors.red),
+                    customAttachmentBuilders: {
+                      'quiz': (_, message, attachments) => MessageBackground(
+                            child: QuizStartAttachment(
+                              message: message,
+                              attachment: attachments[0],
+                            ),
                           ),
-                        ),
-                    'quiz-question': (_, message, attachments) =>
-                        MessageBackground(
-                          child: QuizQuestionAttachment(
-                            attachment: attachments[0],
-                            message: message,
+                      'quiz-question': (_, message, attachments) =>
+                          MessageBackground(
+                            child: QuizQuestionAttachment(
+                              attachment: attachments[0],
+                              message: message,
+                            ),
                           ),
-                        ),
-                    'quiz-result': (_, message, attachments) =>
-                        MessageBackground(
-                          child: QuizResultAttachment(
-                            attachment: attachments[0],
+                      'quiz-result': (_, message, attachments) =>
+                          MessageBackground(
+                            child: QuizResultAttachment(
+                              attachment: attachments[0],
+                            ),
                           ),
-                        ),
-                  },
-                  showEditMessage: false,
-                  showFlagButton: false,
-                  showReactionPickerIndicator: false,
-                );
-              },
+                    },
+                    showEditMessage: false,
+                    showFlagButton: false,
+                    showReactionPickerIndicator: false,
+                  );
+                },
+              ),
             ),
-          ),
-          StreamMessageInput(messageInputController: _messageInputController),
-        ],
+            StreamMessageInput(messageInputController: _messageInputController),
+          ],
+        ),
       ),
     );
   }
@@ -262,8 +268,14 @@ class _QuizQuestionAttachmentState extends State<QuizQuestionAttachment> {
   late final Game game;
 
   Future<void> getGame() async {
-    game = await context.read<QuizRepository>().getGame(questionMessage.gameID)
-        as Game;
+    if (context.read<GameController>().games[questionMessage.gameID] != null) {
+      game = context.read<GameController>().games[questionMessage.gameID]!;
+    } else {
+      game = await context
+          .read<QuizRepository>()
+          .getGame(questionMessage.gameID) as Game;
+      context.read<GameController>().games[questionMessage.gameID] = game;
+    }
   }
 
   Set<String> answers = {};
@@ -349,7 +361,7 @@ class _QuizQuestionAttachmentState extends State<QuizQuestionAttachment> {
       builder: ((context, snapshot) {
         switch (snapshot.connectionState) {
           case ConnectionState.waiting:
-            return const Center(child: CircularProgressIndicator());
+            return const SizedBox.shrink();
           default:
             if (snapshot.hasError) {
               return Text('Error: ${snapshot.error}');
@@ -357,7 +369,9 @@ class _QuizQuestionAttachmentState extends State<QuizQuestionAttachment> {
               final hasAnswered = _hasAnswered();
               final reaction = getYourAnsweredReaction();
               List<String?> selectedAnswers = [];
-              if (reaction != null) {
+              if (reaction != null &&
+                  reaction.extraData.containsKey('answers') &&
+                  reaction.extraData['answers'] != null) {
                 selectedAnswers = List<String>.from(
                     reaction.extraData['answers'] as List<dynamic>);
               }
@@ -404,7 +418,6 @@ class _QuizQuestionAttachmentState extends State<QuizQuestionAttachment> {
                   ).toList(),
                   Wrap(
                     children: getAnsweredReactions()?.map((reaction) {
-                          print(reaction.user);
                           return Padding(
                             padding: const EdgeInsets.all(8.0),
                             child: StreamUserAvatar(
@@ -918,11 +931,15 @@ class __PlayersState extends State<_Players> {
                   if (!_hasUserJoined(players, currentUser.uid) &&
                       widget.game.host.uid != currentUser.uid)
                     ActionButton(
-                      onPressed: () {
-                        context.read<QuizRepository>().joinGame(
-                            gameId: widget.game.id,
-                            user: Player.fromFirebaseUser(
-                                context.read<AuthController>().user!));
+                      onPressed: () async {
+                        final quizRepo = context.read<QuizRepository>();
+                        final gameController = context.read<GameController>();
+                        await quizRepo.joinGame(
+                          gameId: widget.game.id,
+                          user: Player.fromFirebaseUser(
+                              context.read<AuthController>().user!),
+                        );
+                        gameController.games[widget.game.id] = widget.game;
                       },
                       emphasize: true,
                       text: 'join',

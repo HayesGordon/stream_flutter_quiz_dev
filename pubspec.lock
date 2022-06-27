@@ -897,23 +897,29 @@ packages:
   stream_chat:
     dependency: "direct overridden"
     description:
-      path: "/Users/peterghayes/Documents/development/stream-chat-flutter/packages/stream_chat"
-      relative: false
-    source: path
+      path: "packages/stream_chat"
+      ref: "fix/null-map-values"
+      resolved-ref: "58f4ceed647d7ee862daacf1701af6a0225c5304"
+      url: "https://github.com/GetStream/stream-chat-flutter"
+    source: git
     version: "4.2.0"
   stream_chat_flutter:
     dependency: "direct main"
     description:
-      path: "/Users/peterghayes/Documents/development/stream-chat-flutter/packages/stream_chat_flutter"
-      relative: false
-    source: path
+      path: "packages/stream_chat_flutter"
+      ref: "fix/null-map-values"
+      resolved-ref: "58f4ceed647d7ee862daacf1701af6a0225c5304"
+      url: "https://github.com/GetStream/stream-chat-flutter"
+    source: git
     version: "4.2.0"
   stream_chat_flutter_core:
     dependency: "direct overridden"
     description:
-      path: "/Users/peterghayes/Documents/development/stream-chat-flutter/packages/stream_chat_flutter_core"
-      relative: false
-    source: path
+      path: "packages/stream_chat_flutter_core"
+      ref: "fix/null-map-values"
+      resolved-ref: "58f4ceed647d7ee862daacf1701af6a0225c5304"
+      url: "https://github.com/GetStream/stream-chat-flutter"
+    source: git
     version: "4.2.0"
   stream_chat_localizations:
     dependency: "direct main"

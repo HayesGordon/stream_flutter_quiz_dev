@@ -42,7 +42,12 @@ dependencies:
   state_notifier: ^0.7.2+1
   flutter_state_notifier: ^0.7.1
   uuid: ^3.0.6
-  stream_chat_flutter: ^4.2.0
+  stream_chat_flutter:
+    git:
+      url: https://github.com/GetStream/stream-chat-flutter
+      ref: develop
+      path: packages/stream_chat_flutter/
+
   go_router: ^4.0.0
   stream_chat_localizations: ^3.1.0
   flutter_signin_button: ^2.0.0
@@ -54,11 +59,20 @@ dev_dependencies:
 
 dependency_overrides:
   stream_chat_flutter:
-    path: /Users/peterghayes/Documents/development/stream-chat-flutter/packages/stream_chat_flutter
+    git:
+      url: https://github.com/GetStream/stream-chat-flutter
+      ref: fix/null-map-values
+      path: packages/stream_chat_flutter/
   stream_chat_flutter_core:
-    path: /Users/peterghayes/Documents/development/stream-chat-flutter/packages/stream_chat_flutter_core
+    git:
+      url: https://github.com/GetStream/stream-chat-flutter
+      ref: fix/null-map-values
+      path: packages/stream_chat_flutter_core/
   stream_chat:
-    path: /Users/peterghayes/Documents/development/stream-chat-flutter/packages/stream_chat
+    git:
+      url: https://github.com/GetStream/stream-chat-flutter
+      ref: fix/null-map-values
+      path: packages/stream_chat/
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
